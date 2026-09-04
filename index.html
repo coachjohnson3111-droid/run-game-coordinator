@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#111111"/>
 <link rel="manifest" href="manifest.json"/>
 <link rel="apple-touch-icon" href="icon.svg"/>
-<title>Run Game Coordinator V2.2</title>
+<title>Run Game Coordinator V2.3</title>
 <style>
 :root{--black:#111;--dark:#1c1c1c;--gold:#f2b705;--bg:#f4f4f4;--green:#d9ead3;--red:#f4cccc;--blue:#d9eaf7;--white:#fff}
 *{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:#111}
@@ -47,12 +47,15 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
 <main>
 <section id="live" class="screen active">
  <div class="card"><div class="title">Fast Chart</div>
-  <div class="grid3 call-selectors">
+  <div class="grid2 call-selectors">
     <div><label>Formation</label><select id="formation"></select></div>
     <div><label>Motion</label><select id="motion"></select></div>
-    <div><label>Play</label><select id="run"></select></div>
   </div>
-  <div style="margin-top:12px"><label>CALL # — REQUIRED PREFIX</label><div id="callNums" class="tapgrid"></div><div id="callMeaning" class="alert" style="margin-top:8px"></div></div>
+  <div class="grid2 call-selectors" style="margin-top:8px">
+    <div><label>Call #</label><select id="callNum"><option>1</option><option>2</option><option>3</option><option>4</option><option>6</option><option>7</option><option>8</option><option>9</option></select></div>
+    <div><label>Play Name</label><select id="run"></select></div>
+  </div>
+  <div id="callMeaning" class="alert" style="margin-top:8px"></div>
   <div class="grid2" style="margin-top:10px"><div><label>Selected Call</label><div id="selectedCall" class="alert">Choose formation → motion → run</div></div><div><label>Direction</label><select id="direction"><option>Boundary</option><option>Field</option><option>Strong</option><option>Weak</option><option>Either</option></select></div></div>
   <div class="title" style="margin-top:14px">Front</div><div id="fronts" class="tapgrid"></div>
   <div class="title" style="margin-top:14px">Box</div><div id="boxes" class="tapgrid"></div>
@@ -81,8 +84,8 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
 <section id="plan" class="screen">
  <div class="card"><div class="title">Pregame IF / THEN Plan</div>
   <div class="grid2"><div><label>Formation</label><input id="pForm"/></div><div><label>Motion</label><input id="pMotion"/></div></div>
-  <div class="grid2" style="margin-top:8px"><div><label>Call #</label><select id="pCallNum"><option>1</option><option>2</option><option>3</option><option>4</option><option>6</option><option>7</option><option>8</option><option>9</option></select></div><div><label>Call Type</label><input id="pCallType" value="RUN" readonly/></div></div>
-  <div class="grid2" style="margin-top:8px"><div><label>Play</label><input id="pRun"/></div><div><label>Direction</label><select id="pDir"><option>Boundary</option><option>Field</option><option>Strong</option><option>Weak</option></select></div></div>
+  <div class="grid2" style="margin-top:8px"><div><label>Call #</label><select id="pCallNum"><option>1</option><option>2</option><option>3</option><option>4</option><option>6</option><option>7</option><option>8</option><option>9</option></select></div><div><label>Play Name</label><input id="pRun"/></div></div>
+  <div class="grid2" style="margin-top:8px"><div><label>Direction</label><select id="pDir"><option>Boundary</option><option>Field</option><option>Strong</option><option>Weak</option></select></div><div><label>Call Type</label><input id="pCallType" value="RUN" readonly/></div></div>
   <div class="grid2" style="margin-top:8px"><div><label>Expected Front</label><select id="pFront"></select></div><div><label>Expected Box</label><select id="pBox"></select></div></div>
   <div style="margin-top:8px"><label>Counter if defense changes</label><input id="pCounter" placeholder="Power Boundary"/></div>
   <button class="primary" style="margin-top:10px" onclick="savePlan()">ADD TO PLAN</button>
@@ -110,37 +113,45 @@ const OFFENSE={
  motions:["None","BUMP","BUZZ","ZAP","ZORO","RACE","LEAD","RODEO","LASSO","ORBIT","BEAR","BULLET","IN","OUT","SHIFT"],
  runs:["ZIPPER","ZELDA","BOX","ZEUS","SOX","TACK","CHEVY","CORVETTE","IMPALA","CAMARO","STINGER","BOSS","SILVERADO","HERO","PATRIOT","COWBOY","HORSE","BUCK","TRIGGER","SPUR","BLUFF"]
 };
+const PLAY_ACTIONS=["HERO", "RACK/LEVEL", "ZELDA", "BOX", "WAVE", "TRIGGER", "CUT", "DODGE", "RIO/LOBO", "RIP/LIZ", "TWEAK", "T-REX", "TROJAN"];
+const PASSES=["QUICKS", "HITCHES", "OHIO", "SAIL", "SLANT/SIT", "MESH", "STICK", "OUTS", "VERTICALS", "SPACING", "SMASH", "DAGGER", "DEEP OUTS", "HI-LOWS", "MILLS", "DRIVE", "VERTICAL CHOICE", "DEEP CHOICE", "OPTION", "4 VERTICALS", "CRACK VERT", "DOUBLE POST", "DEEP CROSS", "COUNTRY", "DIG / OUT", "SMASH F PIPE", "STICK SWITCH", "CURL", "SHALLOW", "POST", "WHEEL", "SPEED OUT", "HITCH SLOT FADE"];
+const CALL_TYPES={"1":"RUN","2":"RUN","3":"PLAY ACTION","4":"PLAY ACTION","6":"PASS / 5-MAN PRO","7":"PASS / 5-MAN PRO","8":"PASS / 6-MAN PRO","9":"PASS / 6-MAN PRO"};
 const fronts=["Over","Under","Split","Odd","Bear","3-3","Other"], boxes=["5","6","7","8+"], moves=["None","Slant Field","Slant Boundary","Stunt","Pressure"];
 function fillSelect(id,arr,placeholder){
  const el=document.getElementById(id);
  el.innerHTML=(placeholder?`<option value="">${placeholder}</option>`:"")+arr.map(x=>`<option value="${x}">${x}</option>`).join("");
 }
-function showCall(){selectedCall.innerHTML=`<b>${formation.value||'—'}</b> / ${motion.value||'None'} → <b>${callNum} ${run.value||'—'}</b> ${direction.value} <span class="pill">${CALL_TYPES[callNum]}</span>`}
+function showCall(){selectedCall.innerHTML=`<b>${formation.value||'—'}</b> / ${motion.value||'None'} → <b>${callNum.value} ${run.value||'—'}</b> ${direction.value} <span class="pill">${CALL_TYPES[callNum.value]}</span>`}
 
 let pick={front:"Over",box:"6",move:"None"};
-let callNum="1";
-const CALL_TYPES={"1":"RUN","2":"RUN","3":"PLAY ACTION","4":"PLAY ACTION","6":"5-MAN PRO","7":"5-MAN PRO","8":"6-MAN PRO","9":"6-MAN PRO"};
 let plays=JSON.parse(localStorage.getItem("rgc_plays")||"[]");
 let plans=JSON.parse(localStorage.getItem("rgc_plans")||"[]");
 
-function taps(id,arr,key){document.getElementById(id).innerHTML=arr.map(x=>`<button class="tap ${pick[key]===x?'sel':''}" onclick="pick.${key}='${x}';taps('${id}',${JSON.stringify(arr)},'${key}')">${x}</button>`).join("")} 
-function renderCallNums(){const nums=["1","2","3","4","6","7","8","9"];callNums.innerHTML=nums.map(n=>`<button class="tap ${callNum===n?'sel':''}" onclick="callNum='${n}';renderCallNums();showCall()">${n}</button>`).join("");callMeaning.innerHTML=`<b>${callNum} = ${CALL_TYPES[callNum]}</b>`;}
+function taps(id,arr,key){document.getElementById(id).innerHTML=arr.map(x=>`<button class="tap ${pick[key]===x?'sel':''}" onclick="pick.${key}='${x}';taps('${id}',${JSON.stringify(arr)},'${key}')">${x}</button>`).join("")}
 taps("fronts",fronts,"front");taps("boxes",boxes,"box");taps("moves",moves,"move");
 fillSelect("formation",OFFENSE.formations,"Select formation");
 fillSelect("motion",OFFENSE.motions);
-fillSelect("run",OFFENSE.runs,"Select run");
 motion.value="None";
-renderCallNums();
+function filterPlayNames(){
+ const n=callNum.value;
+ let menu=(n==="1"||n==="2")?OFFENSE.runs:((n==="3"||n==="4")?PLAY_ACTIONS:PASSES);
+ const old=run.value;
+ fillSelect("run",menu,"Select play");
+ if(menu.includes(old)) run.value=old;
+ callMeaning.innerHTML=`<b>${n} = ${CALL_TYPES[n]}</b>`;
+ showCall();
+}
+callNum.addEventListener("change",filterPlayNames);
 [formation,motion,run,direction].forEach(el=>el.addEventListener("change",showCall));
+filterPlayNames();
 pCallNum.addEventListener("change",()=>pCallType.value=CALL_TYPES[pCallNum.value]);
-showCall();
 document.getElementById("pFront").innerHTML=fronts.map(x=>`<option>${x}</option>`).join("");
 document.getElementById("pBox").innerHTML=boxes.map(x=>`<option>${x}</option>`).join("");
 
 function game(){return {qtr:qtr.value,clock:clock.value,us:+us.value,them:+them.value,ball:ball.value,down:+down.value,dist:+dist.value,mode:mode.value}}
 function show(id,b){document.querySelectorAll(".screen").forEach(x=>x.classList.remove("active"));document.getElementById(id).classList.add("active");document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));b.classList.add("active");render()}
 function savePlay(){
- let p={...game(),formation:formation.value.trim(),motion:motion.value.trim()||"None",callNum:callNum,callType:CALL_TYPES[callNum],run:run.value.trim(),direction:direction.value,front:pick.front,box:pick.box,move:pick.move,yards:+yards.value,grade:+grade.value,reaction:reaction.value,note:note.value.trim(),ts:Date.now()};
+ let p={...game(),formation:formation.value.trim(),motion:motion.value.trim()||"None",callNum:callNum.value,callType:CALL_TYPES[callNum.value],run:run.value.trim(),direction:direction.value,front:pick.front,box:pick.box,move:pick.move,yards:+yards.value,grade:+grade.value,reaction:reaction.value,note:note.value.trim(),ts:Date.now()};
  if(!p.formation){alert("Enter formation.");return} plays.push(p);localStorage.setItem("rgc_plays",JSON.stringify(plays));note.value="";yards.value=0;grade.value="0";showCall();render();
 }
 function savePlan(){

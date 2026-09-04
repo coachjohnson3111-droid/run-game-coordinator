@@ -1,2 +1,7 @@
-RUN GAME COORDINATOR V2.2
-1/2 RUN | 3/4 PLAY ACTION | 6/7 5-MAN PRO | 8/9 6-MAN PRO
+RUN GAME COORDINATOR V2.3
+Call # is a dropdown separate from Play Name.
+1/2 filters Play Name to RUNS.
+3/4 filters Play Name to PLAY ACTIONS.
+6/7 filters Play Name to PASSES and labels 5-MAN PRO.
+8/9 filters Play Name to PASSES and labels 6-MAN PRO.
+Run and pass/play-action names are grounded in the uploaded 2026 Klein Cain terminology sheet.
