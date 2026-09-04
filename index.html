@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#111111"/>
 <link rel="manifest" href="manifest.json"/>
 <link rel="apple-touch-icon" href="icon.svg"/>
-<title>Run Game Coordinator V2.5</title>
+<title>Run Game Coordinator V2.7</title>
 <style>
 :root{--black:#111;--dark:#1c1c1c;--gold:#f2b705;--bg:#f4f4f4;--green:#d9ead3;--red:#f4cccc;--blue:#d9eaf7;--white:#fff}
 *{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:#111}
@@ -55,10 +55,10 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
     <div><label>Call #</label><select id="callNum"><option>1</option><option>2</option><option>3</option><option>4</option><option>6</option><option>7</option><option>8</option><option>9</option></select></div>
     <div><label>Play Name</label><select id="run"></select></div>
   </div>
-  <div class="grid2" style="margin-top:10px"><div><label>Selected Call</label><div id="selectedCall" class="alert">Choose formation → motion → run</div></div><div><label>Direction</label><select id="direction"><option>Boundary</option><option>Field</option><option>Strong</option><option>Weak</option><option>Either</option></select></div></div>
-  <div class="title" style="margin-top:14px">Front</div><div id="fronts" class="tapgrid"></div>
-  <div class="title" style="margin-top:14px">Box</div><div id="boxes" class="tapgrid"></div>
-  <div class="title" style="margin-top:14px">Movement / Pressure</div><div id="moves" class="tapgrid"></div>
+<div class="grid2" style="margin-top:10px"><div><label>Selected Call</label><div id="selectedCall" class="alert">Choose formation → motion → run</div></div><div><label>Direction</label><select id="direction"><option>Boundary</option><option>Field</option><option>Strong</option><option>Weak</option><option>Either</option></select></div></div>
+  <div class="title" style="margin-top:14px">Front</div><select id="frontSelect"><option>Over</option><option>Under</option><option>Split</option><option>Odd</option><option>Bear</option><option>3-3</option><option>Other</option></select>
+  <div class="title" style="margin-top:14px">Box</div><select id="boxSelect"><option>5</option><option selected>6</option><option>7</option><option>8+</option></select>
+  <div class="title" style="margin-top:14px">Movement / Pressure</div><select id="moveSelect"><option selected>None</option><option>Slant Field</option><option>Slant Boundary</option><option>Stunt</option><option>Pressure</option></select>
   <div class="grid2" style="margin-top:12px"><div><label>Yards</label><input id="yards" type="number" value="0"/></div><div><label>Scheme Grade</label><select id="grade"><option value="2">🔥 +2 Big Win</option><option value="1">✓ +1 Win</option><option value="0" selected>— 0 Neutral</option><option value="-1">⚠ -1 Loss</option><option value="-2">✕ -2 Bad</option></select></div></div>
   <div style="margin-top:8px"><label>Defensive Reaction</label><select id="reaction"><option>No Reaction</option><option>LB Bump</option><option>Safety Rotation</option><option>Front Shift</option><option>Added Box Defender</option><option>Pressure</option></select></div>
   <div style="margin-top:8px"><label>Quick Note</label><input id="note" placeholder="Will stopped bumping / safety inserted / etc."/></div>
@@ -120,14 +120,16 @@ function fillSelect(id,arr,placeholder){
  const el=document.getElementById(id);
  el.innerHTML=(placeholder?`<option value="">${placeholder}</option>`:"")+arr.map(x=>`<option value="${x}">${x}</option>`).join("");
 }
-function showCall(){ /* call classification remains internal */ }
+function showCall(){const f=document.getElementById("formation"),m=document.getElementById("motion"),c=document.getElementById("callNum"),r=document.getElementById("run"),d=document.getElementById("direction");document.getElementById("selectedCall").innerHTML=`<b>${f.value||'—'}</b> / ${m.value||'None'} → <b>${c.value} ${r.value||'—'}</b> ${d.value} <span class="pill">${CALL_TYPES[c.value]}</span>`}
 
 let pick={front:"Over",box:"6",move:"None"};
 let plays=JSON.parse(localStorage.getItem("rgc_plays")||"[]");
 let plans=JSON.parse(localStorage.getItem("rgc_plans")||"[]");
 
 function taps(id,arr,key){document.getElementById(id).innerHTML=arr.map(x=>`<button class="tap ${pick[key]===x?'sel':''}" onclick="pick.${key}='${x}';taps('${id}',${JSON.stringify(arr)},'${key}')">${x}</button>`).join("")}
-taps("fronts",fronts,"front");taps("boxes",boxes,"box");taps("moves",moves,"move");
+frontSelect.addEventListener("change",()=>pick.front=frontSelect.value);
+boxSelect.addEventListener("change",()=>pick.box=boxSelect.value);
+moveSelect.addEventListener("change",()=>pick.move=moveSelect.value);
 fillSelect("formation",OFFENSE.formations,"Select formation");
 fillSelect("motion",OFFENSE.motions);
 motion.value="None";
@@ -147,7 +149,7 @@ function loadAllPlayNames(preferredType){
  });
  if(current) sel.value=current;
  const n=document.getElementById("callNum").value;
- showCall();
+showCall();
 }
 document.getElementById("callNum").addEventListener("change",()=>loadAllPlayNames(CALL_TYPES[document.getElementById("callNum").value]));
 ["formation","motion","run","direction"].forEach(id=>document.getElementById(id).addEventListener("change",showCall));
