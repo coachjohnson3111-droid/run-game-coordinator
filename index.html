@@ -30,7 +30,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
 </head>
 <body>
 <header>
- <div class="brand">RUN GAME COORDINATOR</div><div class="sub">Present → Read → Attack → Detect → Counter → Sequence</div>
+ <div class="brand">RUN GAME COORDINATOR V2</div><div class="sub">Present → Read → Attack → Detect → Counter → Sequence</div>
  <div class="gamebar">
   <select id="qtr"><option>1</option><option>2</option><option>3</option><option>4</option><option>OT</option></select>
   <input id="clock" value="12:00" aria-label="clock"/>
@@ -46,8 +46,11 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
 <main>
 <section id="live" class="screen active">
  <div class="card"><div class="title">Fast Chart</div>
-  <div class="grid2"><div><label>Formation</label><input id="formation" placeholder="Steel"/></div><div><label>Motion</label><input id="motion" placeholder="Jet"/></div></div>
-  <div class="grid2" style="margin-top:8px"><div><label>Run</label><input id="run" placeholder="Counter"/></div><div><label>Direction</label><select id="direction"><option>Boundary</option><option>Field</option><option>Strong</option><option>Weak</option><option>Either</option></select></div></div>
+  <div><label>Formation — tap</label><div id="formBtns" class="tapgrid"></div></div>
+  <div style="margin-top:10px"><label>Motion — tap</label><div id="motionBtns" class="tapgrid"></div></div>
+  <div style="margin-top:10px"><label>Run — tap</label><div id="runBtns" class="tapgrid"></div></div>
+  <input id="formation" type="hidden"/><input id="motion" type="hidden"/><input id="run" type="hidden"/>
+  <div class="grid2" style="margin-top:10px"><div><label>Selected Call</label><div id="selectedCall" class="alert">Choose formation → motion → run</div></div><div><label>Direction</label><select id="direction"><option>Boundary</option><option>Field</option><option>Strong</option><option>Weak</option><option>Either</option></select></div></div>
   <div class="title" style="margin-top:14px">Front</div><div id="fronts" class="tapgrid"></div>
   <div class="title" style="margin-top:14px">Box</div><div id="boxes" class="tapgrid"></div>
   <div class="title" style="margin-top:14px">Movement / Pressure</div><div id="moves" class="tapgrid"></div>
@@ -98,13 +101,22 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
 </nav>
 
 <script>
+const OFFENSE={
+ formations:["ACE","JACK","JOKER","KING","QUEEN","EARLY","LATE","CROWD","CLUSTER","RING","FLING","RICK","FLICK","DROP","FLOP","DRIP","FLIP","GREY","WHITE","RED","YELLOW","ARMY","NAVY","PAIR","DEAL","BRONZE","GOLD","IRON","STEEL","BLUE","GREEN","BROWN","BLACK","TAN","TEAL","FOREST","LIME","RIGHT","LEFT"],
+ motions:["None","BUMP","BUZZ","ZAP","ZORO","RACE","LEAD","RODEO","LASSO","ORBIT","BEAR","BULLET","IN","OUT","SHIFT"],
+ runs:["ZIPPER","ZELDA","BOX","ZEUS","SOX","TACK","CHEVY","CORVETTE","IMPALA","CAMARO","STINGER","BOSS","SILVERADO","HERO","PATRIOT","COWBOY","HORSE","BUCK","TRIGGER","SPUR","BLUFF"]
+};
 const fronts=["Over","Under","Split","Odd","Bear","3-3","Other"], boxes=["5","6","7","8+"], moves=["None","Slant Field","Slant Boundary","Stunt","Pressure"];
+let callPick={formation:"",motion:"None",run:""};
+function quick(id,arr,key){document.getElementById(id).innerHTML=arr.map(x=>`<button class="tap ${callPick[key]===x?'sel':''}" onclick="callPick.${key}='${x}';document.getElementById('${key}').value='${x}';quick('${id}',OFFENSE.${key==='formation'?'formations':key==='motion'?'motions':'runs'},'${key}');showCall()">${x}</button>`).join('')}
+function showCall(){selectedCall.innerHTML=`<b>${callPick.formation||'—'}</b> / ${callPick.motion||'None'} → <b>${callPick.run||'—'}</b> ${direction.value}`}
+
 let pick={front:"Over",box:"6",move:"None"};
 let plays=JSON.parse(localStorage.getItem("rgc_plays")||"[]");
 let plans=JSON.parse(localStorage.getItem("rgc_plans")||"[]");
 
 function taps(id,arr,key){document.getElementById(id).innerHTML=arr.map(x=>`<button class="tap ${pick[key]===x?'sel':''}" onclick="pick.${key}='${x}';taps('${id}',${JSON.stringify(arr)},'${key}')">${x}</button>`).join("")}
-taps("fronts",fronts,"front");taps("boxes",boxes,"box");taps("moves",moves,"move");
+taps("fronts",fronts,"front");taps("boxes",boxes,"box");taps("moves",moves,"move");quick("formBtns",OFFENSE.formations,"formation");quick("motionBtns",OFFENSE.motions,"motion");quick("runBtns",OFFENSE.runs,"run");direction.addEventListener("change",showCall);
 document.getElementById("pFront").innerHTML=fronts.map(x=>`<option>${x}</option>`).join("");
 document.getElementById("pBox").innerHTML=boxes.map(x=>`<option>${x}</option>`).join("");
 
@@ -112,7 +124,7 @@ function game(){return {qtr:qtr.value,clock:clock.value,us:+us.value,them:+them.
 function show(id,b){document.querySelectorAll(".screen").forEach(x=>x.classList.remove("active"));document.getElementById(id).classList.add("active");document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));b.classList.add("active");render()}
 function savePlay(){
  let p={...game(),formation:formation.value.trim(),motion:motion.value.trim()||"None",run:run.value.trim(),direction:direction.value,front:pick.front,box:pick.box,move:pick.move,yards:+yards.value,grade:+grade.value,reaction:reaction.value,note:note.value.trim(),ts:Date.now()};
- if(!p.formation){alert("Enter formation.");return} plays.push(p);localStorage.setItem("rgc_plays",JSON.stringify(plays));note.value="";yards.value=0;grade.value="0";render();
+ if(!p.formation){alert("Enter formation.");return} plays.push(p);localStorage.setItem("rgc_plays",JSON.stringify(plays));note.value="";yards.value=0;grade.value="0";callPick.run="";run.value="";quick("runBtns",OFFENSE.runs,"run");showCall();render();
 }
 function savePlan(){
  let p={formation:pForm.value.trim(),motion:pMotion.value.trim()||"None",run:pRun.value.trim(),direction:pDir.value,front:pFront.value,box:pBox.value,counter:pCounter.value.trim()};
@@ -141,8 +153,8 @@ function renderIntel(){
 }
 function scorePlan(p){
  let recent=plays.slice(-10), same=recent.filter(x=>x.formation===p.formation && x.motion===p.motion);
- let score=0; same.forEach(x=>score+=x.grade*3+x.yards*.15);
- let g=game(); if(g.qtr==="4" && g.us>g.them && g.mode==="4-Minute") score += same.filter(x=>x.yards<0).length?-2:3;
+ let score=0; same.forEach(x=>score+=x.grade*3+x.yards*.15); let recentNeg=same.filter(x=>x.yards<0).length; let explosives=same.filter(x=>x.yards>=10).length; score += explosives*1.5 - recentNeg*1.5;
+ let g=game(); if(g.qtr==="4" && g.us>g.them && g.mode==="4-Minute") score += recentNeg?-4:4;
  if(g.mode==="Must Score"||g.mode==="2-Minute") score += same.filter(x=>x.yards>=10).length*2;
  return score;
 }

@@ -1,18 +1,12 @@
-RUN GAME COORDINATOR — iPad PWA v1
+RUN GAME COORDINATOR V2
 
-FILES
-- index.html: app
-- manifest.json: installable web-app metadata
-- sw.js: offline cache
-- icon.svg: app icon
+Changes:
+- Klein Cain varsity terminology loaded from the 2026 offense terminology sheet.
+- Tap-to-chart Formation / Motion / Run.
+- Live game state remains visible.
+- Formation/motion defensive fingerprint and adjustment alerts.
+- Situational weighting in Next Drive engine.
+- 10-play maximum dynamic roadmap and simplified Field Top 3.
 
-IMPORTANT
-An iPad cannot permanently install this from a ZIP/file URL as a PWA. Put these files on any HTTPS static web host first.
-Then on iPad:
-1. Open the hosted URL in Safari.
-2. Tap Share.
-3. Tap Add to Home Screen.
-4. Open Coordinator from the new Home Screen icon.
-5. Open it once while online so the offline cache is installed.
-
-The app stores game plans and charted snaps locally on that iPad using browser storage.
+DEPLOY UPDATE:
+Upload/replace index.html, manifest.json, sw.js and icon.svg in the SAME GitHub repository. GitHub Pages will update the existing Home Screen app URL.
