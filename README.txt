@@ -1,12 +1,10 @@
-RUN GAME COORDINATOR V2.4
-FIX: Play Name dropdown now visibly contains all three groups:
-- RUNS
-- PLAY ACTION
-- PASSES
-Call # remains a separate dropdown.
-Call # still classifies the call:
-1/2 Run
-3/4 Play Action
-6/7 Pass / 5-man protection
-8/9 Pass / 6-man protection
-This version also removes reliance on implicit browser element globals for better iPad Safari/PWA reliability.
+RUN GAME COORDINATOR V2.5 — CLEAN LIVE SCREEN
+
+CHANGES
+- Removed visible "1 = RUN / 3 = PLAY ACTION / etc." translation box.
+- Removed visible "SELECTED CALL" summary box.
+- Call # remains a separate dropdown.
+- Play Name remains a separate dropdown with Runs, Play Action, and Passes.
+- Call-number classification is still stored internally for intelligence/statistics.
+- Direction remains directly below the call selectors.
+- New service-worker cache forces the updated layout onto the iPad PWA.
