@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#111111"/>
 <link rel="manifest" href="manifest.json"/>
 <link rel="apple-touch-icon" href="icon.svg"/>
-<title>Run Game Coordinator V2.3</title>
+<title>Run Game Coordinator V2.4</title>
 <style>
 :root{--black:#111;--dark:#1c1c1c;--gold:#f2b705;--bg:#f4f4f4;--green:#d9ead3;--red:#f4cccc;--blue:#d9eaf7;--white:#fff}
 *{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:#111}
@@ -121,7 +121,7 @@ function fillSelect(id,arr,placeholder){
  const el=document.getElementById(id);
  el.innerHTML=(placeholder?`<option value="">${placeholder}</option>`:"")+arr.map(x=>`<option value="${x}">${x}</option>`).join("");
 }
-function showCall(){selectedCall.innerHTML=`<b>${formation.value||'—'}</b> / ${motion.value||'None'} → <b>${callNum.value} ${run.value||'—'}</b> ${direction.value} <span class="pill">${CALL_TYPES[callNum.value]}</span>`}
+function showCall(){const f=document.getElementById("formation"),m=document.getElementById("motion"),c=document.getElementById("callNum"),r=document.getElementById("run"),d=document.getElementById("direction");document.getElementById("selectedCall").innerHTML=`<b>${f.value||'—'}</b> / ${m.value||'None'} → <b>${c.value} ${r.value||'—'}</b> ${d.value} <span class="pill">${CALL_TYPES[c.value]}</span>`}
 
 let pick={front:"Over",box:"6",move:"None"};
 let plays=JSON.parse(localStorage.getItem("rgc_plays")||"[]");
@@ -132,18 +132,28 @@ taps("fronts",fronts,"front");taps("boxes",boxes,"box");taps("moves",moves,"move
 fillSelect("formation",OFFENSE.formations,"Select formation");
 fillSelect("motion",OFFENSE.motions);
 motion.value="None";
-function filterPlayNames(){
- const n=callNum.value;
- let menu=(n==="1"||n==="2")?OFFENSE.runs:((n==="3"||n==="4")?PLAY_ACTIONS:PASSES);
- const old=run.value;
- fillSelect("run",menu,"Select play");
- if(menu.includes(old)) run.value=old;
- callMeaning.innerHTML=`<b>${n} = ${CALL_TYPES[n]}</b>`;
+function loadAllPlayNames(preferredType){
+ const sel=document.getElementById("run");
+ const current=sel.value;
+ sel.innerHTML='<option value="">Select run / play action / pass</option>';
+ const groups=[
+   ["RUNS",OFFENSE.runs],
+   ["PLAY ACTION",PLAY_ACTIONS],
+   ["PASSES",PASSES]
+ ];
+ groups.forEach(([label,items])=>{
+   const g=document.createElement("optgroup"); g.label=label;
+   items.forEach(x=>{const o=document.createElement("option");o.value=x;o.textContent=x;g.appendChild(o)});
+   sel.appendChild(g);
+ });
+ if(current) sel.value=current;
+ const n=document.getElementById("callNum").value;
+ document.getElementById("callMeaning").innerHTML=`<b>${n} = ${CALL_TYPES[n]}</b> — Play Name contains RUNS + PLAY ACTION + PASSES`;
  showCall();
 }
-callNum.addEventListener("change",filterPlayNames);
-[formation,motion,run,direction].forEach(el=>el.addEventListener("change",showCall));
-filterPlayNames();
+document.getElementById("callNum").addEventListener("change",()=>loadAllPlayNames(CALL_TYPES[document.getElementById("callNum").value]));
+["formation","motion","run","direction"].forEach(id=>document.getElementById(id).addEventListener("change",showCall));
+loadAllPlayNames();
 pCallNum.addEventListener("change",()=>pCallType.value=CALL_TYPES[pCallNum.value]);
 document.getElementById("pFront").innerHTML=fronts.map(x=>`<option>${x}</option>`).join("");
 document.getElementById("pBox").innerHTML=boxes.map(x=>`<option>${x}</option>`).join("");
