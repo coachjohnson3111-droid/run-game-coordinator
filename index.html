@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"/>
+<meta name="theme-color" content="#111111"/>
+<link rel="manifest" href="manifest.json"/>
+<link rel="apple-touch-icon" href="icon.svg"/>
+<title>Run Game Coordinator</title>
+<style>
+:root{--black:#111;--dark:#1c1c1c;--gold:#f2b705;--bg:#f4f4f4;--green:#d9ead3;--red:#f4cccc;--blue:#d9eaf7;--white:#fff}
+*{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:#111}
+header{position:sticky;top:0;z-index:5;background:var(--black);color:#fff;padding:12px 14px;border-bottom:4px solid var(--gold)}
+.brand{font-weight:900;font-size:20px}.sub{font-size:12px;opacity:.8}.gamebar{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:9px}
+.gamebar input,.gamebar select{width:100%;font-size:16px;padding:9px;border:0;border-radius:8px}
+nav{position:fixed;bottom:0;left:0;right:0;z-index:8;background:#111;display:grid;grid-template-columns:repeat(5,1fr);padding-bottom:env(safe-area-inset-bottom)}
+nav button{border:0;background:#111;color:#fff;padding:12px 4px;font-weight:800;font-size:12px} nav button.active{background:var(--gold);color:#111}
+main{padding:12px 12px 90px;max-width:1100px;margin:auto}.screen{display:none}.screen.active{display:block}
+.card{background:#fff;border-radius:14px;padding:13px;margin:10px 0;box-shadow:0 2px 9px #0001}.title{font-weight:900;font-size:18px;margin-bottom:10px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+label{font-size:11px;font-weight:800;text-transform:uppercase;color:#555} input,select,textarea{width:100%;padding:11px;border:1px solid #bbb;border-radius:9px;font-size:16px;background:#fff}
+.tapgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.tap{padding:13px 5px;border:2px solid #ddd;background:#fff;border-radius:10px;font-weight:800}.tap.sel{border-color:#111;background:var(--gold)}
+.primary{width:100%;padding:15px;border:0;border-radius:11px;background:var(--gold);font-weight:900;font-size:17px}.secondary{padding:11px;border:0;border-radius:9px;background:#222;color:#fff;font-weight:800}
+.alert{background:#fff2cc;border-left:6px solid var(--gold);padding:11px;border-radius:8px}.win{background:var(--green)}.solve{background:var(--red)}.info{background:var(--blue)}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;border-bottom:1px solid #ddd;text-align:left}th{background:#222;color:#fff}
+.bigcall{font-size:22px;font-weight:950}.muted{color:#666;font-size:12px}.pill{display:inline-block;padding:5px 8px;border-radius:999px;background:#eee;font-size:11px;font-weight:900;margin:2px}
+.series{display:grid;gap:7px}.seriesItem{background:#fff;border-left:6px solid var(--gold);padding:10px;border-radius:9px}
+@media(min-width:800px){.tapgrid{grid-template-columns:repeat(6,1fr)}.gamebar{grid-template-columns:repeat(8,1fr)}}
+</style>
+</head>
+<body>
+<header>
+ <div class="brand">RUN GAME COORDINATOR</div><div class="sub">Present → Read → Attack → Detect → Counter → Sequence</div>
+ <div class="gamebar">
+  <select id="qtr"><option>1</option><option>2</option><option>3</option><option>4</option><option>OT</option></select>
+  <input id="clock" value="12:00" aria-label="clock"/>
+  <input id="us" type="number" value="0" aria-label="our score"/>
+  <input id="them" type="number" value="0" aria-label="their score"/>
+  <input id="ball" value="-25" aria-label="ball"/>
+  <select id="down"><option>1</option><option>2</option><option>3</option><option>4</option></select>
+  <input id="dist" type="number" value="10" aria-label="distance"/>
+  <select id="mode"><option>Normal</option><option>Establish Run</option><option>Attack Adjustment</option><option>Coming Out</option><option>Must Score</option><option>2-Minute</option><option>4-Minute</option><option>Red Zone</option></select>
+ </div>
+</header>
+
+<main>
+<section id="live" class="screen active">
+ <div class="card"><div class="title">Fast Chart</div>
+  <div class="grid2"><div><label>Formation</label><input id="formation" placeholder="Steel"/></div><div><label>Motion</label><input id="motion" placeholder="Jet"/></div></div>
+  <div class="grid2" style="margin-top:8px"><div><label>Run</label><input id="run" placeholder="Counter"/></div><div><label>Direction</label><select id="direction"><option>Boundary</option><option>Field</option><option>Strong</option><option>Weak</option><option>Either</option></select></div></div>
+  <div class="title" style="margin-top:14px">Front</div><div id="fronts" class="tapgrid"></div>
+  <div class="title" style="margin-top:14px">Box</div><div id="boxes" class="tapgrid"></div>
+  <div class="title" style="margin-top:14px">Movement / Pressure</div><div id="moves" class="tapgrid"></div>
+  <div class="grid2" style="margin-top:12px"><div><label>Yards</label><input id="yards" type="number" value="0"/></div><div><label>Scheme Grade</label><select id="grade"><option value="2">🔥 +2 Big Win</option><option value="1">✓ +1 Win</option><option value="0" selected>— 0 Neutral</option><option value="-1">⚠ -1 Loss</option><option value="-2">✕ -2 Bad</option></select></div></div>
+  <div style="margin-top:8px"><label>Defensive Reaction</label><select id="reaction"><option>No Reaction</option><option>LB Bump</option><option>Safety Rotation</option><option>Front Shift</option><option>Added Box Defender</option><option>Pressure</option></select></div>
+  <div style="margin-top:8px"><label>Quick Note</label><input id="note" placeholder="Will stopped bumping / safety inserted / etc."/></div>
+  <button class="primary" style="margin-top:12px" onclick="savePlay()">SAVE SNAP</button>
+ </div>
+ <div id="liveAlert"></div>
+</section>
+
+<section id="intel" class="screen">
+ <div class="card"><div class="title">Formation Intelligence</div><div id="intelBody"></div></div>
+ <div class="card"><div class="title">Defensive Identity</div><div id="defBody"></div></div>
+</section>
+
+<section id="series" class="screen">
+ <div class="card"><div class="title">Next Drive Intelligence — 10 Max</div>
+  <div class="alert">Roadmap, not a rigid script. Rebuild when front/box/field-zone/score/time changes.</div>
+  <button class="primary" style="margin-top:10px" onclick="buildSeries()">BUILD / REBUILD NEXT DRIVE</button>
+ </div>
+ <div id="seriesBody" class="series"></div>
+</section>
+
+<section id="plan" class="screen">
+ <div class="card"><div class="title">Pregame IF / THEN Plan</div>
+  <div class="grid2"><div><label>Formation</label><input id="pForm"/></div><div><label>Motion</label><input id="pMotion"/></div></div>
+  <div class="grid2" style="margin-top:8px"><div><label>Run</label><input id="pRun"/></div><div><label>Direction</label><select id="pDir"><option>Boundary</option><option>Field</option><option>Strong</option><option>Weak</option></select></div></div>
+  <div class="grid2" style="margin-top:8px"><div><label>Expected Front</label><select id="pFront"></select></div><div><label>Expected Box</label><select id="pBox"></select></div></div>
+  <div style="margin-top:8px"><label>Counter if defense changes</label><input id="pCounter" placeholder="Power Boundary"/></div>
+  <button class="primary" style="margin-top:10px" onclick="savePlan()">ADD TO PLAN</button>
+ </div>
+ <div class="card"><div id="planBody"></div></div>
+</section>
+
+<section id="field" class="screen">
+ <div class="card"><div class="title">Field — Right Now</div><div id="fieldBody"></div></div>
+ <div class="card"><div class="title">Radio Format</div><div class="bigcall">FORMATION → FRONT → BOX → PROBLEM / OPPORTUNITY → RECOMMENDATION</div></div>
+</section>
+</main>
+
+<nav>
+<button class="active" onclick="show('live',this)">LIVE</button>
+<button onclick="show('intel',this)">INTEL</button>
+<button onclick="show('series',this)">NEXT DRIVE</button>
+<button onclick="show('plan',this)">PLAN</button>
+<button onclick="show('field',this)">FIELD</button>
+</nav>
+
+<script>
+const fronts=["Over","Under","Split","Odd","Bear","3-3","Other"], boxes=["5","6","7","8+"], moves=["None","Slant Field","Slant Boundary","Stunt","Pressure"];
+let pick={front:"Over",box:"6",move:"None"};
+let plays=JSON.parse(localStorage.getItem("rgc_plays")||"[]");
+let plans=JSON.parse(localStorage.getItem("rgc_plans")||"[]");
+
+function taps(id,arr,key){document.getElementById(id).innerHTML=arr.map(x=>`<button class="tap ${pick[key]===x?'sel':''}" onclick="pick.${key}='${x}';taps('${id}',${JSON.stringify(arr)},'${key}')">${x}</button>`).join("")}
+taps("fronts",fronts,"front");taps("boxes",boxes,"box");taps("moves",moves,"move");
+document.getElementById("pFront").innerHTML=fronts.map(x=>`<option>${x}</option>`).join("");
+document.getElementById("pBox").innerHTML=boxes.map(x=>`<option>${x}</option>`).join("");
+
+function game(){return {qtr:qtr.value,clock:clock.value,us:+us.value,them:+them.value,ball:ball.value,down:+down.value,dist:+dist.value,mode:mode.value}}
+function show(id,b){document.querySelectorAll(".screen").forEach(x=>x.classList.remove("active"));document.getElementById(id).classList.add("active");document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));b.classList.add("active");render()}
+function savePlay(){
+ let p={...game(),formation:formation.value.trim(),motion:motion.value.trim()||"None",run:run.value.trim(),direction:direction.value,front:pick.front,box:pick.box,move:pick.move,yards:+yards.value,grade:+grade.value,reaction:reaction.value,note:note.value.trim(),ts:Date.now()};
+ if(!p.formation){alert("Enter formation.");return} plays.push(p);localStorage.setItem("rgc_plays",JSON.stringify(plays));note.value="";yards.value=0;grade.value="0";render();
+}
+function savePlan(){
+ let p={formation:pForm.value.trim(),motion:pMotion.value.trim()||"None",run:pRun.value.trim(),direction:pDir.value,front:pFront.value,box:pBox.value,counter:pCounter.value.trim()};
+ if(!p.formation||!p.run){alert("Enter formation and run.");return}plans.push(p);localStorage.setItem("rgc_plans",JSON.stringify(plans));render();
+}
+function key(p){return p.formation+" | "+p.motion}
+function groups(){
+ let g={};plays.forEach(p=>(g[key(p)]??=[]).push(p));return g;
+}
+function pct(n,d){return d?Math.round(n/d*100):0}
+function intelligence(){
+ let out=[];for(const [k,a] of Object.entries(groups())){
+  let wins=a.filter(x=>x.grade>0).length, avg=a.reduce((s,x)=>s+x.yards,0)/a.length;
+  let early=a.slice(0,Math.min(5,a.length)), recent=a.slice(-Math.min(5,a.length));
+  const top=(arr,field)=>{let c={};arr.forEach(x=>c[x[field]]=(c[x[field]]||0)+1);return Object.entries(c).sort((x,y)=>y[1]-x[1])[0]?.[0]||"-"}
+  let orig=top(early,"front")+"/"+top(early,"box"), now=top(recent,"front")+"/"+top(recent,"box");
+  let changed=a.length>=5 && orig!==now;
+  let state=changed?"♟ FORCING ADJUSTMENT":(pct(wins,a.length)>=60?"🔥 WINNING":(a.length>=4?"🔴 NEED ANSWER":"👁 LEARNING"));
+  out.push({k,a,wins,avg,orig,now,changed,state,topReaction:top(recent,"reaction")});
+ } return out.sort((a,b)=>(b.wins/b.a.length)-(a.wins/a.a.length));
+}
+function renderIntel(){
+ let I=intelligence();intelBody.innerHTML=I.length?I.map(x=>`<div class="card ${x.changed?'info':''}"><div class="bigcall">${x.k}</div><div>${x.state}</div><span class="pill">${x.a.length} snaps</span><span class="pill">${x.avg.toFixed(1)} YPC</span><span class="pill">${pct(x.wins,x.a.length)}% scheme wins</span><div style="margin-top:8px"><b>Original:</b> ${x.orig} &nbsp; → &nbsp; <b>Recent:</b> ${x.now}</div><div><b>Recent reaction:</b> ${x.topReaction}</div></div>`).join(""):"No live snaps yet.";
+ let all=plays.slice(-10), count={};all.forEach(x=>count[x.front]=(count[x.front]||0)+1);let top=Object.entries(count).sort((a,b)=>b[1]-a[1])[0];
+ defBody.innerHTML=top?`Last ${all.length}: <b>${top[0]}</b> is the most common front (${pct(top[1],all.length)}%).`:"Chart snaps to build identity.";
+}
+function scorePlan(p){
+ let recent=plays.slice(-10), same=recent.filter(x=>x.formation===p.formation && x.motion===p.motion);
+ let score=0; same.forEach(x=>score+=x.grade*3+x.yards*.15);
+ let g=game(); if(g.qtr==="4" && g.us>g.them && g.mode==="4-Minute") score += same.filter(x=>x.yards<0).length?-2:3;
+ if(g.mode==="Must Score"||g.mode==="2-Minute") score += same.filter(x=>x.yards>=10).length*2;
+ return score;
+}
+function buildSeries(){
+ let candidates=[...plans].sort((a,b)=>scorePlan(b)-scorePlan(a));
+ if(!candidates.length){
+   let seen={};plays.slice().reverse().forEach(x=>{let k=x.formation+x.motion+x.run+x.direction;if(!seen[k])seen[k]={formation:x.formation,motion:x.motion,run:x.run,direction:x.direction,front:x.front,box:x.box,counter:"Use live counter"}});
+   candidates=Object.values(seen);
+ }
+ let types=["PROBE","COUNTER","ATTACK","CONSTRAINT","PROBE","ATTACK","COUNTER","SETUP","ATTACK","MONEY"];
+ let I=intelligence(), adj=I.find(x=>x.changed);
+ window.currentSeries=Array.from({length:Math.min(10,Math.max(1,candidates.length?10:0))},(_,i)=>{
+   let p=candidates[i%candidates.length]; let why=adj&&p.formation===adj.k.split(" | ")[0]?`Defense changed ${adj.orig} → ${adj.now}`:`Best available plan/live evidence`;
+   return {...p,type:types[i],why,expected:(p.front||"Live look")+"/"+(p.box||""),adjust:p.counter||"Rebuild from IF/THEN"};
+ });
+ localStorage.setItem("rgc_series",JSON.stringify(window.currentSeries));renderSeries();renderField();
+}
+function renderSeries(){
+ let s=window.currentSeries||JSON.parse(localStorage.getItem("rgc_series")||"[]");
+ seriesBody.innerHTML=s.length?s.map((p,i)=>`<div class="seriesItem"><b>${i+1}. ${p.type}</b> — <span class="bigcall">${p.formation}${p.motion&&p.motion!=="None"?"/"+p.motion:""} → ${p.run} ${p.direction}</span><div class="muted">Expected: ${p.expected||""} | WHY: ${p.why||""}</div><div><b>If they adjust:</b> ${p.adjust||p.counter||"Rebuild"}</div></div>`).join(""):"Build the next drive after loading a plan or charting live snaps.";
+}
+function renderPlan(){planBody.innerHTML=plans.length?`<table><tr><th>Formation</th><th>Motion</th><th>Run</th><th>Expected</th><th>Counter</th></tr>${plans.map(p=>`<tr><td>${p.formation}</td><td>${p.motion}</td><td>${p.run} ${p.direction}</td><td>${p.front}/${p.box}</td><td>${p.counter}</td></tr>`).join("")}</table>`:"No pregame plan loaded."}
+function renderField(){
+ let I=intelligence(), top=I.slice(0,3), adj=I.find(x=>x.changed), s=JSON.parse(localStorage.getItem("rgc_series")||"[]").slice(0,3);
+ fieldBody.innerHTML=`<div class="alert"><b>${game().qtr}Q ${game().clock} | US ${game().us}-${game().them} | ${game().ball} | ${game().down}&${game().dist} | ${game().mode}</b></div>
+ ${adj?`<div class="card info"><b>⚠ ADJUSTMENT:</b> ${adj.k} changed ${adj.orig} → ${adj.now}. Recent reaction: ${adj.topReaction}.</div>`:""}
+ <div class="title">Top 3 Next Calls</div>${s.length?s.map((p,i)=>`<div class="seriesItem"><b>${i+1}</b> ${p.formation}/${p.motion} — <b>${p.run} ${p.direction}</b><br><span class="muted">${p.why}</span></div>`).join(""):"Build Next Drive to populate."}`;
+}
+function render(){renderIntel();renderSeries();renderPlan();renderField();
+ let a=intelligence().find(x=>x.changed);liveAlert.innerHTML=a?`<div class="alert"><b>DEFENSIVE ADJUSTMENT DETECTED:</b> ${a.k}: ${a.orig} → ${a.now}. Do not automatically abandon it—attack the new answer.</div>`:"";
+}
+if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
+render();
+</script>
+</body></html>
