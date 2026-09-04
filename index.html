@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#111111"/>
 <link rel="manifest" href="manifest.json"/>
 <link rel="apple-touch-icon" href="icon.svg"/>
-<title>Run Game Coordinator V2.1</title>
+<title>Run Game Coordinator V2.2</title>
 <style>
 :root{--black:#111;--dark:#1c1c1c;--gold:#f2b705;--bg:#f4f4f4;--green:#d9ead3;--red:#f4cccc;--blue:#d9eaf7;--white:#fff}
 *{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:#111}
@@ -50,8 +50,9 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
   <div class="grid3 call-selectors">
     <div><label>Formation</label><select id="formation"></select></div>
     <div><label>Motion</label><select id="motion"></select></div>
-    <div><label>Run</label><select id="run"></select></div>
+    <div><label>Play</label><select id="run"></select></div>
   </div>
+  <div style="margin-top:12px"><label>CALL # — REQUIRED PREFIX</label><div id="callNums" class="tapgrid"></div><div id="callMeaning" class="alert" style="margin-top:8px"></div></div>
   <div class="grid2" style="margin-top:10px"><div><label>Selected Call</label><div id="selectedCall" class="alert">Choose formation → motion → run</div></div><div><label>Direction</label><select id="direction"><option>Boundary</option><option>Field</option><option>Strong</option><option>Weak</option><option>Either</option></select></div></div>
   <div class="title" style="margin-top:14px">Front</div><div id="fronts" class="tapgrid"></div>
   <div class="title" style="margin-top:14px">Box</div><div id="boxes" class="tapgrid"></div>
@@ -80,7 +81,8 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
 <section id="plan" class="screen">
  <div class="card"><div class="title">Pregame IF / THEN Plan</div>
   <div class="grid2"><div><label>Formation</label><input id="pForm"/></div><div><label>Motion</label><input id="pMotion"/></div></div>
-  <div class="grid2" style="margin-top:8px"><div><label>Run</label><input id="pRun"/></div><div><label>Direction</label><select id="pDir"><option>Boundary</option><option>Field</option><option>Strong</option><option>Weak</option></select></div></div>
+  <div class="grid2" style="margin-top:8px"><div><label>Call #</label><select id="pCallNum"><option>1</option><option>2</option><option>3</option><option>4</option><option>6</option><option>7</option><option>8</option><option>9</option></select></div><div><label>Call Type</label><input id="pCallType" value="RUN" readonly/></div></div>
+  <div class="grid2" style="margin-top:8px"><div><label>Play</label><input id="pRun"/></div><div><label>Direction</label><select id="pDir"><option>Boundary</option><option>Field</option><option>Strong</option><option>Weak</option></select></div></div>
   <div class="grid2" style="margin-top:8px"><div><label>Expected Front</label><select id="pFront"></select></div><div><label>Expected Box</label><select id="pBox"></select></div></div>
   <div style="margin-top:8px"><label>Counter if defense changes</label><input id="pCounter" placeholder="Power Boundary"/></div>
   <button class="primary" style="margin-top:10px" onclick="savePlan()">ADD TO PLAN</button>
@@ -113,19 +115,24 @@ function fillSelect(id,arr,placeholder){
  const el=document.getElementById(id);
  el.innerHTML=(placeholder?`<option value="">${placeholder}</option>`:"")+arr.map(x=>`<option value="${x}">${x}</option>`).join("");
 }
-function showCall(){selectedCall.innerHTML=`<b>${formation.value||'—'}</b> / ${motion.value||'None'} → <b>${run.value||'—'}</b> ${direction.value}`}
+function showCall(){selectedCall.innerHTML=`<b>${formation.value||'—'}</b> / ${motion.value||'None'} → <b>${callNum} ${run.value||'—'}</b> ${direction.value} <span class="pill">${CALL_TYPES[callNum]}</span>`}
 
 let pick={front:"Over",box:"6",move:"None"};
+let callNum="1";
+const CALL_TYPES={"1":"RUN","2":"RUN","3":"PLAY ACTION","4":"PLAY ACTION","6":"5-MAN PRO","7":"5-MAN PRO","8":"6-MAN PRO","9":"6-MAN PRO"};
 let plays=JSON.parse(localStorage.getItem("rgc_plays")||"[]");
 let plans=JSON.parse(localStorage.getItem("rgc_plans")||"[]");
 
-function taps(id,arr,key){document.getElementById(id).innerHTML=arr.map(x=>`<button class="tap ${pick[key]===x?'sel':''}" onclick="pick.${key}='${x}';taps('${id}',${JSON.stringify(arr)},'${key}')">${x}</button>`).join("")}
+function taps(id,arr,key){document.getElementById(id).innerHTML=arr.map(x=>`<button class="tap ${pick[key]===x?'sel':''}" onclick="pick.${key}='${x}';taps('${id}',${JSON.stringify(arr)},'${key}')">${x}</button>`).join("")} 
+function renderCallNums(){const nums=["1","2","3","4","6","7","8","9"];callNums.innerHTML=nums.map(n=>`<button class="tap ${callNum===n?'sel':''}" onclick="callNum='${n}';renderCallNums();showCall()">${n}</button>`).join("");callMeaning.innerHTML=`<b>${callNum} = ${CALL_TYPES[callNum]}</b>`;}
 taps("fronts",fronts,"front");taps("boxes",boxes,"box");taps("moves",moves,"move");
 fillSelect("formation",OFFENSE.formations,"Select formation");
 fillSelect("motion",OFFENSE.motions);
 fillSelect("run",OFFENSE.runs,"Select run");
 motion.value="None";
+renderCallNums();
 [formation,motion,run,direction].forEach(el=>el.addEventListener("change",showCall));
+pCallNum.addEventListener("change",()=>pCallType.value=CALL_TYPES[pCallNum.value]);
 showCall();
 document.getElementById("pFront").innerHTML=fronts.map(x=>`<option>${x}</option>`).join("");
 document.getElementById("pBox").innerHTML=boxes.map(x=>`<option>${x}</option>`).join("");
@@ -133,11 +140,11 @@ document.getElementById("pBox").innerHTML=boxes.map(x=>`<option>${x}</option>`).
 function game(){return {qtr:qtr.value,clock:clock.value,us:+us.value,them:+them.value,ball:ball.value,down:+down.value,dist:+dist.value,mode:mode.value}}
 function show(id,b){document.querySelectorAll(".screen").forEach(x=>x.classList.remove("active"));document.getElementById(id).classList.add("active");document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));b.classList.add("active");render()}
 function savePlay(){
- let p={...game(),formation:formation.value.trim(),motion:motion.value.trim()||"None",run:run.value.trim(),direction:direction.value,front:pick.front,box:pick.box,move:pick.move,yards:+yards.value,grade:+grade.value,reaction:reaction.value,note:note.value.trim(),ts:Date.now()};
+ let p={...game(),formation:formation.value.trim(),motion:motion.value.trim()||"None",callNum:callNum,callType:CALL_TYPES[callNum],run:run.value.trim(),direction:direction.value,front:pick.front,box:pick.box,move:pick.move,yards:+yards.value,grade:+grade.value,reaction:reaction.value,note:note.value.trim(),ts:Date.now()};
  if(!p.formation){alert("Enter formation.");return} plays.push(p);localStorage.setItem("rgc_plays",JSON.stringify(plays));note.value="";yards.value=0;grade.value="0";showCall();render();
 }
 function savePlan(){
- let p={formation:pForm.value.trim(),motion:pMotion.value.trim()||"None",run:pRun.value.trim(),direction:pDir.value,front:pFront.value,box:pBox.value,counter:pCounter.value.trim()};
+ let p={formation:pForm.value.trim(),motion:pMotion.value.trim()||"None",callNum:pCallNum.value,callType:CALL_TYPES[pCallNum.value],run:pRun.value.trim(),direction:pDir.value,front:pFront.value,box:pBox.value,counter:pCounter.value.trim()};
  if(!p.formation||!p.run){alert("Enter formation and run.");return}plans.push(p);localStorage.setItem("rgc_plans",JSON.stringify(plans));render();
 }
 function key(p){return p.formation+" | "+p.motion}
@@ -171,7 +178,7 @@ function scorePlan(p){
 function buildSeries(){
  let candidates=[...plans].sort((a,b)=>scorePlan(b)-scorePlan(a));
  if(!candidates.length){
-   let seen={};plays.slice().reverse().forEach(x=>{let k=x.formation+x.motion+x.run+x.direction;if(!seen[k])seen[k]={formation:x.formation,motion:x.motion,run:x.run,direction:x.direction,front:x.front,box:x.box,counter:"Use live counter"}});
+   let seen={};plays.slice().reverse().forEach(x=>{let k=x.formation+x.motion+x.run+x.direction;if(!seen[k])seen[k]={formation:x.formation,motion:x.motion,callNum:x.callNum||"1",callType:x.callType||"RUN",run:x.run,direction:x.direction,front:x.front,box:x.box,counter:"Use live counter"}});
    candidates=Object.values(seen);
  }
  let types=["PROBE","COUNTER","ATTACK","CONSTRAINT","PROBE","ATTACK","COUNTER","SETUP","ATTACK","MONEY"];
@@ -184,14 +191,14 @@ function buildSeries(){
 }
 function renderSeries(){
  let s=window.currentSeries||JSON.parse(localStorage.getItem("rgc_series")||"[]");
- seriesBody.innerHTML=s.length?s.map((p,i)=>`<div class="seriesItem"><b>${i+1}. ${p.type}</b> — <span class="bigcall">${p.formation}${p.motion&&p.motion!=="None"?"/"+p.motion:""} → ${p.run} ${p.direction}</span><div class="muted">Expected: ${p.expected||""} | WHY: ${p.why||""}</div><div><b>If they adjust:</b> ${p.adjust||p.counter||"Rebuild"}</div></div>`).join(""):"Build the next drive after loading a plan or charting live snaps.";
+ seriesBody.innerHTML=s.length?s.map((p,i)=>`<div class="seriesItem"><b>${i+1}. ${p.type}</b> — <span class="bigcall">${p.formation}${p.motion&&p.motion!=="None"?"/"+p.motion:""} → ${p.callNum||""} ${p.run} ${p.direction}</span><div class="muted">Expected: ${p.expected||""} | WHY: ${p.why||""}</div><div><b>If they adjust:</b> ${p.adjust||p.counter||"Rebuild"}</div></div>`).join(""):"Build the next drive after loading a plan or charting live snaps.";
 }
-function renderPlan(){planBody.innerHTML=plans.length?`<table><tr><th>Formation</th><th>Motion</th><th>Run</th><th>Expected</th><th>Counter</th></tr>${plans.map(p=>`<tr><td>${p.formation}</td><td>${p.motion}</td><td>${p.run} ${p.direction}</td><td>${p.front}/${p.box}</td><td>${p.counter}</td></tr>`).join("")}</table>`:"No pregame plan loaded."}
+function renderPlan(){planBody.innerHTML=plans.length?`<table><tr><th>Formation</th><th>Motion</th><th>Run</th><th>Expected</th><th>Counter</th></tr>${plans.map(p=>`<tr><td>${p.formation}</td><td>${p.motion}</td><td>${p.callNum||""} ${p.run} ${p.direction}</td><td>${p.front}/${p.box}</td><td>${p.counter}</td></tr>`).join("")}</table>`:"No pregame plan loaded."}
 function renderField(){
  let I=intelligence(), top=I.slice(0,3), adj=I.find(x=>x.changed), s=JSON.parse(localStorage.getItem("rgc_series")||"[]").slice(0,3);
  fieldBody.innerHTML=`<div class="alert"><b>${game().qtr}Q ${game().clock} | US ${game().us}-${game().them} | ${game().ball} | ${game().down}&${game().dist} | ${game().mode}</b></div>
  ${adj?`<div class="card info"><b>⚠ ADJUSTMENT:</b> ${adj.k} changed ${adj.orig} → ${adj.now}. Recent reaction: ${adj.topReaction}.</div>`:""}
- <div class="title">Top 3 Next Calls</div>${s.length?s.map((p,i)=>`<div class="seriesItem"><b>${i+1}</b> ${p.formation}/${p.motion} — <b>${p.run} ${p.direction}</b><br><span class="muted">${p.why}</span></div>`).join(""):"Build Next Drive to populate."}`;
+ <div class="title">Top 3 Next Calls</div>${s.length?s.map((p,i)=>`<div class="seriesItem"><b>${i+1}</b> ${p.formation}/${p.motion} — <b>${p.callNum||""} ${p.run} ${p.direction}</b><br><span class="muted">${p.why}</span></div>`).join(""):"Build Next Drive to populate."}`;
 }
 function render(){renderIntel();renderSeries();renderPlan();renderField();
  let a=intelligence().find(x=>x.changed);liveAlert.innerHTML=a?`<div class="alert"><b>DEFENSIVE ADJUSTMENT DETECTED:</b> ${a.k}: ${a.orig} → ${a.now}. Do not automatically abandon it—attack the new answer.</div>`:"";
