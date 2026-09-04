@@ -1,8 +1,4 @@
-RUN GAME COORDINATOR V2.6
-
-CHANGE REQUEST:
-- KEEP Selected Call.
-- DELETE the yellow Call # meaning box (example: "1 = RUN").
-- Call # and Play Name remain separate dropdowns.
-- Internal call classification remains active.
-- Fresh PWA cache included.
+RUN GAME COORDINATOR V2.8 — COMPACT LIVE
+Front, Box, and Movement / Pressure are now three compact dropdowns on the same row.
+On very narrow phone screens they stack automatically.
+Selected Call remains. Call # meaning box remains removed.
