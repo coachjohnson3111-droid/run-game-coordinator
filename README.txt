@@ -1,12 +1,11 @@
-RUN GAME COORDINATOR V2
+RUN GAME COORDINATOR V2.1 — DROPDOWN GAME-DAY UI
 
 Changes:
-- Klein Cain varsity terminology loaded from the 2026 offense terminology sheet.
-- Tap-to-chart Formation / Motion / Run.
-- Live game state remains visible.
-- Formation/motion defensive fingerprint and adjustment alerts.
-- Situational weighting in Next Drive engine.
-- 10-play maximum dynamic roadmap and simplified Field Top 3.
+- Formation, Motion, and Run use dropdowns instead of large button walls.
+- Front, Box, Movement/Pressure remain one-tap buttons.
+- Formation/Motion/Run stay selected after SAVE SNAP for faster tempo charting.
+- Visible V2.1 badge added.
+- Service worker cache bumped to force update from older versions.
 
-DEPLOY UPDATE:
-Upload/replace index.html, manifest.json, sw.js and icon.svg in the SAME GitHub repository. GitHub Pages will update the existing Home Screen app URL.
+Upload these files to the ROOT of the existing GitHub repository and commit.
+GitHub Pages will redeploy the same app URL.
